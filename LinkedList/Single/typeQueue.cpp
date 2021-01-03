@@ -1,7 +1,7 @@
 /*
 Created by Jeonghan Kim
 
-Single Linked-list in the form of stack
+Single Linked-list in the form of queue
 Incremental insertion sort implemented
 */
 
@@ -10,13 +10,13 @@ Incremental insertion sort implemented
 using namespace std;
 
 #include <algorithm>
-#include <stack>
+#include <queue>
 #include <cstdlib>
 #include <ctime>
 
 const int n = 1000;
 const int nTbl = 1000;
-const int nBuf = n*nTbl;
+const int nBuf = n * nTbl + nTbl;
 
 #define f(i,a,b)  for(register int i=a;i<b;++i)
 
@@ -24,11 +24,11 @@ struct Node {
 	int v;
 	Node* next;
 
-	bool operator<(const Node & r) const {
+	bool operator<(const Node& r) const {
 		return v < r.v;
 	}
 
-	Node *alloc(int d, Node *n) {
+	Node* alloc(int d, Node* n) {
 		v = d;
 		next = n;
 		return  this;
@@ -36,20 +36,22 @@ struct Node {
 };
 
 Node* heads[nTbl];
+Node* tails[nTbl];
 Node buf[nBuf];
 int bcnt;
 
-#define _nullchk(addr) if (0 == heads[(addr)]) return false
-#define _new(v, p) (p) = buf[bcnt++].alloc(v, (p))
+#define _nullchk(addr) if (tails[(addr)] == heads[(addr)]) return false
+#define _new(v,p) (p) = buf[bcnt++].alloc(v, (p))
 #define _next(p) for (; (p); (p) = (p)->next) 
 
 void push(int v, int addr) {
-	_new(v, heads[addr]);
+	_new(v, tails[addr]->next);
+	tails[addr] = tails[addr]->next;
 }
 
-bool top(int & v, int addr) {
+bool front(int& v, int addr) {
 	_nullchk(addr);
-	v = heads[addr]->v;
+	v = heads[addr]->next->v;
 	return true;
 }
 
@@ -60,25 +62,24 @@ bool pop(int addr) {
 }
 
 bool isEmpty(int addr) {
-	return 0 == heads[addr];
+	return tails[(addr)] == heads[addr];
 }
 
 void push_sorted(int v, int addr) {
-	Node* p = heads[addr];
-	Node* q = p;
+	Node* q = heads[addr];
+	Node* p = q->next;
+	
 	for (; p && p->v < v; q = p, p = p->next);
+	_new(v, q->next);
 
-	if (p == heads[addr]) {
-		_new(v, heads[addr]);
-	}
-	else {
-		_new(v, q->next);
+	if (q == tails[addr]) {
+		tails[addr] = q->next;
 	}
 }
 
 void print(int addr, int cnt) {
 	cout << "===========================================================" << endl;
-	Node* p = heads[addr];
+	Node* p = heads[addr]->next;
 	int i = 0;
 
 	_next(p) {
@@ -90,8 +91,7 @@ void print(int addr, int cnt) {
 }
 
 void selectionSort(int addr) {
-
-	Node* pi = heads[addr];
+	Node* pi = heads[addr]->next;
 	_next(pi) {
 		Node* mp = pi;
 		Node* pj = pi->next;
@@ -112,12 +112,12 @@ void init() {
 	bcnt = 0;
 
 	f(i, 0, nTbl) {
-		heads[i] = 0;
+		heads[i] = tails[i] = buf[bcnt++].alloc(0,0);
 	}
 }
 
 int gt[nTbl][n];
-stack<int> stk[nTbl];
+queue<int> que[nTbl];
 
 void pushpopTest() {
 	init();
@@ -125,24 +125,22 @@ void pushpopTest() {
 	f(i, 0, nTbl) {
 		f(j, 0, n) {
 			gt[i][j] = rand();
-			stk[i].push(gt[i][j]);
+			que[i].push(gt[i][j]);
 			push(gt[i][j], i);
 		}
-
-		//print(i, 5);
 	}
 
 	int badCnt = 0;
 	f(i, 0, nTbl) {
 		f(j, 0, n) {
 			int v;
-			top(v, i);
+			front(v, i);
 
-			if (stk[i].top() != v) {
+			if (que[i].front() != v) {
 				badCnt++;
 			}
 
-			stk[i].pop();
+			que[i].pop();
 			pop(i);
 		}
 	}
@@ -174,7 +172,7 @@ void insertionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i];
+		Node* p = heads[i]->next;
 		int j = 0;
 		_next(p) {
 			if (gt[i][j++] != p->v) {
@@ -183,6 +181,7 @@ void insertionSortTest() {
 		}
 	}
 	cout << badCnt << endl;
+
 }
 
 void selectionSortTest() {
@@ -204,7 +203,7 @@ void selectionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i];
+		Node* p = heads[i]->next;
 		int j = 0;
 		_next(p) {
 			if (gt[i][j++] != p->v) {
