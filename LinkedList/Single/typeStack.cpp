@@ -168,7 +168,7 @@ void insertionSortTest() {
 	}
 
 	clock_t te = clock() - ts;
-	cout << "Elapsed time : " << double(te - ts) / CLOCKS_PER_SEC << "sec" << endl;
+	cout << "Elapsed time : " << double(te) / CLOCKS_PER_SEC << "sec" << endl;
 
 	int badCnt = 0;
 
@@ -198,7 +198,7 @@ void selectionSortTest() {
 		selectionSort(i);
 	}
 	clock_t te = clock() - ts;
-	cout << "Elapsed time : " << double(te - ts) / CLOCKS_PER_SEC << "sec" << endl;
+	cout << "Elapsed time : " << double(te) / CLOCKS_PER_SEC << "sec" << endl;
 
 	int badCnt = 0;
 
