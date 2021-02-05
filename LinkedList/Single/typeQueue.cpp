@@ -9,6 +9,8 @@ Incremental insertion sort implemented
 
 using namespace std;
 
+#define rt register
+
 #include <algorithm>
 #include <queue>
 #include <cstdlib>
@@ -66,14 +68,13 @@ bool isEmpty(int addr) {
 }
 
 void push_sorted(int v, int addr) {
-	Node* q = heads[addr];
-	Node* p = q->next;
+	rt Node* p = heads[addr];
 	
-	for (; p && p->v < v; q = p, p = p->next);
-	_new(v, q->next);
+	for (; p->next && p->next->v < v; p = p->next);
+	_new(v, p);
 
-	if (q == tails[addr]) {
-		tails[addr] = q->next;
+	if (p == tails[addr]) {
+		tails[addr] = p->next;
 	}
 }
 
