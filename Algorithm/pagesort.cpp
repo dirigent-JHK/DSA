@@ -265,16 +265,15 @@ void quickSortStack(int first, int last, T** input) {
 
 template <typename T>
 struct Heap {
-	T* heap[maxID + 1];
+	T* heap[maxID + 2];
 	int sz;
-
 
 	void push(T* value) {
 		heap[sz] = value;
 
 		rint current = sz;
-		while (current > 0 && *heap[current] < *heap[(current - 1) / 2]) {
-			rint pa = (current - 1) >> 1;
+		while (current > 1 && *heap[current] < *heap[current >> 1]) {
+			rint pa = current >> 1;
 			Data* temp = heap[pa];
 			heap[pa] = heap[current];
 			heap[current] = temp;
@@ -287,13 +286,13 @@ struct Heap {
 	void pop() {
 		sz--;
 
-		heap[0] = heap[sz];
+		heap[1] = heap[sz];
 
-		rint current = 0;
-		rint lc = 1;
-		rint rc = 2;
+		rint current = 1;
+		rint lc = 2;
 		while (lc < sz) {
-			int ch;
+			rint rc = lc + 1;
+			rint ch;
 			if (rc == sz) 	ch = lc;
 			else ch = *heap[lc] < *heap[rc] ? lc : rc;
 
@@ -305,8 +304,7 @@ struct Heap {
 
 			current = ch;
 
-			lc = (ch << 1) + 1;
-			rc = lc + 1;
+			lc = (ch << 1);
 		}
 	}
 };
@@ -418,11 +416,11 @@ int main() {
 			sorted[i]->pos = i;
 		}
 #else
-		hp.sz = 0;
+		hp.sz = 1;
 		f(i, 0, maxID) 	hp.push(sorted[i]);
 
 		f(i, 0, maxID) {
-			sorted[i] = hp.heap[0];
+			sorted[i] = hp.heap[1];
 #ifdef LIST
 #else
 			sorted[i]->pos = i;
