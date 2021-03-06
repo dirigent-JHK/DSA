@@ -3,6 +3,8 @@ Created by Jeonghan Kim
 
 Efficient Heap management when sequential update
 You can find that heap-sort based implementation is super faster than linked-list based insertion sort
+Hashing is added
+In this case, forward list update is most fast
 */
 
 #include <iostream>
@@ -15,15 +17,25 @@ using namespace std;
 #define rint rt int
 #define f(i,a,b) for(rint i=a;i<b;++i)
 
+typedef unsigned long long ull;
+
 const int maxQ = 70000;
 const int maxAccountCall = 30001;
 const int maxAccountID = 100001;
-const int minName = 2;
-const int maxName = 4;
+const int maxName = 10;
+const int maxGroupName = 4;
 const int maxBuf = maxAccountID;
-const int maxHeap = 10;
+const int maxGroup = 10;
 
-#define HEAP
+const int maxMembers = maxAccountCall;
+
+//#define HEAP
+
+void mstrcpy(char dst[], const char src[]) {
+	rint i = 0;
+	for(;src[i];++i) dst[i] = src[i];
+	dst[i] = 0;
+}
 
 enum {
 	open,
@@ -33,11 +45,33 @@ enum {
 	max_op
 };
 
+const char groupPool[maxGroup][maxGroupName+1] = {
+	"sw",
+	"hw",
+	"it",
+	"qa",
+	"aff",
+	"secu",
+	"fin",
+	"plan",
+	"mkt",
+	"hr"
+};
+
+char namePool[maxMembers][maxName + 1];
+
+void genNamePool(int n) {
+	f(i, 0, n) {
+		int len = 1+ rand() % maxName;
+		f(j, 0, len) {
+			namePool[i][j] = rand() % 26 + 'a';
+		}
+	}
+}
+
 struct Account {
 	int time;
 	int state;
-	int name;
-	int group;
 	int asset;
 	int number;
 	int nid;
@@ -52,7 +86,97 @@ struct Account {
 	bool operator!=(const Account& r) const {
 		return number != r.number;
 	}
-} account[maxAccountID], gtaccount[maxAccountID];
+} account[maxGroup][maxAccountID], gtaccount[maxGroup][maxAccountID];
+
+const int maxGrpHash = maxGroup + 3;
+const int maxNameHash = maxMembers + 3;
+
+template <typename T>
+struct HashN {
+	T key;
+	int id;		///data id
+	int hid;
+	HashN* n;
+
+	void alloc(T k, int i, int hi, HashN* hd) {
+		key = k, id = i, hid = hi, n = hd->n, hd->n = this;
+	}
+};
+
+HashN<ull> hnamebuf[maxAccountCall + 3], hnametbl[maxNameHash];
+HashN<int> hgrpbuf[maxAccountCall + 3], hgrptbl[maxGrpHash];
+
+// when the length of char is less than 5
+void key32(int& k, const char s[]) {
+	k = 0;
+	for (rint i = 0; s[i]; ++i) {
+		k *= 26;
+		k |= (s[i] - 96);
+	}
+}
+
+//when the length of char is less than 12
+void key64(ull& k, const char s[]) {
+	k = 0;
+	for (rint i = 0; s[i]; ++i) {
+		k <<= 5;
+		k |= (s[i] - 96);
+	}
+}
+template <typename T>
+struct HashW {
+	int cnt;
+	int maxKey;
+	HashN<T>* buf;
+	HashN<T>* tbl;
+
+	void init(int maxK, HashN<T>* b, HashN<T>* t) {
+		cnt = 0, maxKey = maxK;
+		buf = b, tbl = t; 
+	}
+
+	int find(int & addr, int key) {
+		addr = key % maxKey;
+		rt HashN<T>* p = tbl[addr].n;
+		for (; p; p = p->n) if (p->key == key) return p->hid;
+		return -1;
+	}
+
+	int find(int & addr, ull & key) {
+		addr = key % maxKey;
+		rt HashN<T>* p = tbl[addr].n;
+		for (; p; p = p->n) if (p->key == key) return p->hid;
+		return -1;
+	}
+
+	int getid(int key, int did) {
+		int addr;
+		int id = find(addr, key);
+
+		if (id < 0) {
+			buf[cnt].alloc(key, did, cnt, &tbl[addr]);
+			id = cnt++;
+		}
+
+		return id;
+	}
+
+	int getid(ull & key, int did) {
+		int addr;
+		int id = find(addr, key);
+
+		if (id < 0) {
+			buf[cnt].alloc(key, did, cnt, &tbl[addr]);
+			id = cnt++;
+		}
+
+		return id;
+	}
+};
+
+
+HashW<int> hgrp;
+HashW<ull> hname;
 
 #ifdef HEAP
 
@@ -61,7 +185,7 @@ struct Heap {
 	T* heap[maxAccountCall+2];
 	int sz;
 
-	void updateUp(rint current) {
+	void up(rint current) {
 		while (current > 1 && *heap[current] < *heap[current>>1]) {
 			rint pa = current >> 1;
 
@@ -73,7 +197,7 @@ struct Heap {
 			current = pa;
 		}
 	}
-	void updateDown(rint current) {
+	void down(rint current) {
 		rint lc = current << 1;
 		while (lc < sz) {
 			rint ch;
@@ -94,25 +218,57 @@ struct Heap {
 	}
 
 	void update(rint current) {
-		if (current > 1 && *heap[current] < *heap[current >> 1]) 
-			updateUp(current);
-		else 
-			updateDown(current);
+		if (current == 1 || *heap[current>>1] < *heap[current]) down(current);
+		else up(current);
 	}
 
 	void push(T* value) {
 		heap[sz] = value;
-		updateUp(sz);
-		sz++;
+		up(sz++);
 	}
 
 	void pop() {
 		sz--;
 		heap[1] = heap[sz];
-		updateDown(1);
+		down(1);
+	}
+
+	void pushonly(T* value) {
+		heap[sz] = value;
+		rint current = sz++;
+		while (current > 1 && *heap[current] < *heap[current >> 1]) {
+			rint pa = current >> 1;
+
+			T* temp = heap[pa];
+			heap[pa] = heap[current];
+			heap[current] = temp;
+			current = pa;
+		}
+	}
+
+	void poponly() {
+		sz--;
+		heap[1] = heap[sz];
+
+		rint current = 1;
+		rint lc = 2;
+		while (lc < sz) {
+			rint ch;
+			rint rc = lc + 1;
+			if (rc == sz) 	ch = lc;
+			else ch = *heap[lc] < *heap[rc] ? lc : rc;
+
+			if (*heap[current] < *heap[ch]) break;
+
+			T* temp = heap[current];
+			heap[current] = heap[ch];
+			heap[ch] = temp;
+			current = ch;
+			lc = (ch << 1);
+		}
 	}
 };
-Heap<Account> hp[maxHeap];
+Heap<Account> hp[maxGroup];
 #else
 struct Node {
 	Account* pa;
@@ -132,52 +288,65 @@ struct Node {
 		p->n = n;
 		if (n) n->p = p;
 	}
-} buf[maxBuf], head[maxBuf];
+} buf[maxBuf], head[maxGroup];
 int bcnt;
 #endif // HEAP
 
 
-int hashing(const char c[]) {
-	rint ret = c[0] - 96;
-	for (rint i = 1; c[i]; ++i) {
-		ret *= 26;
-		ret += (c[i] - 96);
-	}
-
-	return ret;
-}
-
 int tc;
+int groupCnt[maxGroup];
 void init() {
 #ifdef HEAP
-	f(i, 0, maxHeap) {
+	f(i, 0, maxGroup) {
 		hp[i].sz = 1;
 		//hp[i].sz = 0;
 	}
 #else
 	bcnt = 0;
-	f(i, 0, maxAccountCall) {
+	f(i, 0, maxGroup) {
 		head[i].n = 0;
 	}
 #endif
 
-	f(i, 1, maxAccountID) {
-		account[i].state = close;
-		gtaccount[i].state = close;
+	f(i, 0, maxGrpHash) hgrptbl[i].n = 0;
+	f(i, 0, maxNameHash) hnametbl[i].n = 0;
+
+	f(g, 0, maxGroup) {
+		groupCnt[g] = 0;
+		f(n, 1, maxAccountID) {
+			account[g][n].state = close;
+			gtaccount[g][n].state = close;
+		}
 	}
+
+	hgrp.init(maxGrpHash, hgrpbuf, hgrptbl);
+	hname.init(maxNameHash, hnamebuf, hnametbl);
 }
 
 
 #ifdef HEAP
 void update(Account* pa) {
-	hp[pa->nid].update(pa->bid);
+	hp[pa->gid].update(pa->bid);
 }
 
 #else
 void update(Account *pa) {
 	rt Node* p = &buf[pa->bid];
+	p->erase();
+#if 0	//Rearward
 	rt Node* q = p->p;
-	for (; q != &head[pa->nid] && *p->pa < *q->pa; q = q->p);
+	for (; q != &head[pa->gid] && *p->pa < *q->pa; q = q->p);
+#else	//Forward
+	rt Node* q = &head[pa->gid];
+	for (; q->n && *q->n->pa  < *p->pa; q = q->n);
+#endif
+	p->insert(q);
+}
+
+void updateF(Account* pa) {
+	rt Node* p = &buf[pa->bid];
+	rt Node* q = p->p;
+	for (; q != &head[pa->gid] && *p->pa < *q->pa; q = q->p);
 
 	p->erase();
 	p->insert(q);
@@ -185,78 +354,116 @@ void update(Account *pa) {
 #endif
 
 const int maxTime = maxAccountCall;
-const int maxTC = 2;
+const int maxTC = 3;
 
 clock_t prof;
+const int topN = 10;
+
 void run(int Q) {
-	int nameID = 0;
-	int groupID = 0;
 	int ecnt = 0;
 
 	clock_t ts = clock();
 	f(i, 0, Q) {
-		srand(i);
+		int npid = rand() % maxMembers;
+		int gpid = rand() % maxGroup;
+		int grpK;
+		ull nameK;
+		key32(grpK, groupPool[gpid]);
+		key64(nameK, namePool[npid]);
 
-		account[i].time = i + 1;
-		account[i].asset = rand() % 1000;
-		account[i].state = open;
-		account[i].number = i + 1;
-		account[i].nid = nameID;
-		account[i].name = hashing("kim");
-		account[i].group = hashing("dev");
-		account[i].gid = groupID;
+		int gid = hgrp.getid(grpK, i);
+		int& gc = groupCnt[gid];
 
-		gtaccount[i] = account[i];
+		account[gid][gc].gid = gid;
+		account[gid][gc].nid = hname.getid(nameK, i);
+
+		account[gid][gc].time = i + 1;
+		account[gid][gc].asset = rand() % 1000;
+		account[gid][gc].state = open;
+		account[gid][gc].number = i + 1;
+
+		gtaccount[gid][gc] = account[gid][gc];
 
 #ifdef HEAP
-		hp[nameID].push(&account[i]);
+		hp[gid].push(&account[gid][gc]);
 #else
-		buf[bcnt].alloc(&account[i], &head[nameID]);
-		account[i].bid = bcnt++;
+		buf[bcnt].alloc(&account[gid][gc], &head[gid]);
+		account[gid][gc].bid = bcnt++;
 #endif
+		gc++;
 	}
 
 #if 1
 	f(i, 0, Q) {
-		rint aid = 1 + rand() % Q;
-		rint state = send + rand() % 2;
-		rint dasset = rand() % 100;
-		rint time = Q + i + 1;
-		account[aid].time = time;
-		account[aid].state = state;
-		account[aid].asset += dasset;
+		int gid = rand() % maxGroup;
+		int id = rand() % groupCnt[gid];
+		int state = send + rand() % 2;
+		int dasset = rand() % 100;
+		int time = Q + i + 1;
+		
+		account[gid][id].time = time;
+		account[gid][id].state = state;
+		account[gid][id].asset += dasset;
 
-		gtaccount[aid].time = time;
-		gtaccount[aid].state = state;
-		gtaccount[aid].asset += dasset;
+		gtaccount[gid][id].time = time;
+		gtaccount[gid][id].state = state;
+		gtaccount[gid][id].asset += dasset;
 
-		update(&account[aid]);
+		update(&account[gid][id]);
+#ifdef HEAP
+		//top N
+		Account* poped[maxGroup][topN];
+		int nPoped[maxGroup] = { 0, };
+
+		f(g, 0, maxGroup) {
+			while (hp[g].sz > 1) {
+				poped[g][nPoped[g]] = hp[g].heap[1];
+				hp[g].pop();
+				if (++nPoped[g] == topN) break;
+			}
+		}
+		
+		f(g, 0, maxGroup) {
+			//check
+			f(i, 1, nPoped[g]) if (*poped[g][i] < *poped[g][i - 1]) ecnt++;
+
+			//push back afer peeking top N
+			f(i, 0, nPoped[g]) 	hp[g].push(poped[g][i]);
+		}
+#endif
 	}
 #endif
 	prof += (clock() - ts);
-	sort(gtaccount, gtaccount + Q);
+	f(g, 0, maxGroup) {
+		sort(&gtaccount[g][0], &gtaccount[g][groupCnt[g]]);
+	}
 
 #ifdef HEAP
-	f(i, 0, Q) {
-		if (*hp[nameID].heap[1] != gtaccount[i]) 
-			ecnt++;
-		hp[nameID].pop();
+	f(g, 0, maxGroup) {
+		f(i, 0, groupCnt[g]) {
+			//if (*hp[g].heap[1] != gtaccount[g][i]) 	ecnt++;
+			hp[g].pop();
+		}
 	}
 #else
-	rt Node* p = head[nameID].n;
-	rint a = 0;
+	f(g, 0, maxGroup) {
+		rt Node* p = head[g].n;
+		rint a = 0;
 
-	for (; p; p = p->n) {
-		if (gtaccount[a] != *p->pa) {
-			ecnt++;
+		for (; p; p = p->n) {
+			if (gtaccount[g][a] != *p->pa) {
+				ecnt++;
+			}
+			a++;
 		}
-		a++;
 	}
 #endif
 
 	cout << ecnt << endl;
 }
 int main() {
+
+	genNamePool(maxMembers);
 
 	f(t, 0, maxTC) {
 		srand(t);
