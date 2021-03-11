@@ -29,7 +29,7 @@ const int maxGroup = 10;
 
 const int maxMembers = maxAccountCall;
 
-//#define HEAP
+#define HEAP
 
 void mstrcpy(char dst[], const char src[]) {
 	rint i = 0;
@@ -185,7 +185,8 @@ struct Heap {
 	T* heap[maxAccountCall+2];
 	int sz;
 
-	void up(rint current) {
+	int up(rint current) {
+		heap[current]->bid = current;
 		while (current > 1 && *heap[current] < *heap[current>>1]) {
 			rint pa = current >> 1;
 
@@ -196,9 +197,11 @@ struct Heap {
 			heap[current]->bid = current;
 			current = pa;
 		}
+		return current;
 	}
 	void down(rint current) {
 		rint lc = current << 1;
+		heap[current]->bid = current;
 		while (lc < sz) {
 			rint ch;
 			rint rc = lc + 1;
@@ -218,8 +221,8 @@ struct Heap {
 	}
 
 	void update(rint current) {
-		if (current == 1 || *heap[current>>1] < *heap[current]) down(current);
-		else up(current);
+		int current = heap[current]->bid;
+		if (up(current) == current]) down(current);
 	}
 
 	void push(T* value) {
