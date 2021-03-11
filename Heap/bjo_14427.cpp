@@ -32,12 +32,14 @@ struct Data {
 	}
 } sd[maxN];
 
+Data *hbuf[1][maxN];
+
 template <typename T>
 struct Heap {
-	T* heap[maxN];
+	T** heap;
 	int sz;
 
-	void init() { sz = 1; }
+	void init(T** buf) { sz = 1, heap = buf }
 
 	void update(T* v) {
 		v->sv = ((long long)(v->v) << 17) + v->idx;
@@ -104,7 +106,7 @@ int mN;
 Heap<Data> hp;
  
 void input() {
-	hp.sz = 1;
+	init(hpbuf[0]);
 	fe(i, 1, mN) {
 		sd[i].idx = i;
 		scanf("%d", &sd[i].v);
