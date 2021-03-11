@@ -20,70 +20,69 @@ const int n = 1000;
 const int nTbl = 1000;
 const int nBuf = n * nTbl + nTbl;
 
-#define f(i,a,b)  for(register int i=a;i<b;++i)
+#define rt register
+#define rint rt int
+#define f(i,a,b)  for(rint i=a;i<b;++i)
 
 struct Node {
 	int v;
-	Node* next;
+	Node* n;
 
 	bool operator<(const Node& r) const {
 		return v < r.v;
 	}
 
-	Node* alloc(int d, Node* n) {
+	void alloc(int d, Node* pv) {
 		v = d;
-		next = n;
-		return  this;
+		n = pv->n;
+		pv->n = this;
 	}
 };
 
-Node* heads[nTbl];
+Node heads[nTbl];
 Node* tails[nTbl];
 Node buf[nBuf];
 int bcnt;
 
-#define _nullchk(addr) if (tails[(addr)] == heads[(addr)]) return false
-#define _new(v,p) (p) = buf[bcnt++].alloc(v, (p))
-#define _next(p) for (; (p); (p) = (p)->next) 
+#define nullchk(addr) if (tails[(addr)] == &heads[(addr)]) return false
+#define alloc(v,p) buf[bcnt++].alloc(v, (p))
+#define next(p) for (; (p); (p) = (p)->n) 
 
 void push(int v, int addr) {
-	_new(v, tails[addr]->next);
-	tails[addr] = tails[addr]->next;
+	alloc(v, tails[addr]);
+	tails[addr] = tails[addr]->n;
 }
 
 bool front(int& v, int addr) {
-	_nullchk(addr);
-	v = heads[addr]->next->v;
+	nullchk(addr);
+	v = heads[addr].n->v;
 	return true;
 }
 
 bool pop(int addr) {
-	_nullchk(addr);
-	heads[addr] = heads[addr]->next;
+	nullchk(addr);
+	heads[addr].n = heads[addr].n->n;
+	if (heads[addr].n == 0) tails[addr] = &heads[addr];
 	return true;
 }
 
-bool isEmpty(int addr) {
-	return tails[(addr)] == heads[addr];
-}
-
 void push_sorted(int v, int addr) {
-	rt Node* p = heads[addr];
+	rt Node* p = &heads[addr];
 	
-	for (; p->next && p->next->v < v; p = p->next);
-	_new(v, p);
+	for (; p->n && p->n->v < v; p = p->n);
+	alloc(v, p);
 
 	if (p == tails[addr]) {
-		tails[addr] = p->next;
+		tails[addr] = p->n;
 	}
 }
 
 void print(int addr, int cnt) {
 	cout << "===========================================================" << endl;
-	Node* p = heads[addr]->next;
+	Node* p = heads[addr].n;
 	int i = 0;
 
-	_next(p) {
+	next(p) {
 		cout << p->v << " ";
 		if (++i == cnt) break;
 	}
@@ -92,12 +91,12 @@ void print(int addr, int cnt) {
 }
 
 void selectionSort(int addr) {
-	Node* pi = heads[addr]->next;
-	_next(pi) {
+	Node* pi = heads[addr].n;
+	next(pi) {
 		Node* mp = pi;
-		Node* pj = pi->next;
+		Node* pj = pi->n;
 
-		_next(pj) {
+		next(pj) {
 			if (pj->v < mp->v) mp = pj;
 		}
 
@@ -113,7 +112,8 @@ void init() {
 	bcnt = 0;
 
 	f(i, 0, nTbl) {
-		heads[i] = tails[i] = buf[bcnt++].alloc(0,0);
+		heads[i].n = 0;
+		tails[i] = &heads[i];
 	}
 }
 
@@ -147,9 +147,8 @@ void pushpopTest() {
 	}
 
 	f(i, 0, nTbl) {
-		if (isEmpty(i) == false) {
+		if (tails[i] != &heads[i]) 
 			badCnt++;
-		}
 	}
 
 	cout << badCnt << endl;
@@ -173,9 +172,9 @@ void insertionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i]->next;
+		Node* p = heads[i].n;
 		int j = 0;
-		_next(p) {
+		next(p) {
 			if (gt[i][j++] != p->v) {
 				badCnt++;
 			}
@@ -204,9 +203,9 @@ void selectionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i]->next;
+		Node* p = heads[i].n;
 		int j = 0;
-		_next(p) {
+		next(p) {
 			if (gt[i][j++] != p->v) {
 				badCnt++;
 			}

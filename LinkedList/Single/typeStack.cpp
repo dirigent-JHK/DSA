@@ -18,70 +18,62 @@ const int n = 1000;
 const int nTbl = 1000;
 const int nBuf = n*nTbl;
 
-#define f(i,a,b)  for(register int i=a;i<b;++i)
+#define rt register
+#define rint rt int
+
+#define f(i,a,b)  for(rint i=a;i<b;++i)
 
 struct Node {
 	int v;
-	Node* next;
+	Node* n;
 
 	bool operator<(const Node & r) const {
 		return v < r.v;
 	}
 
-	Node *alloc(int d, Node *n) {
+	void alloc(int d, Node *hd) {
 		v = d;
-		next = n;
-		return  this;
+		n = hd->n;
+		hd->n = this;
 	}
 };
 
-Node* heads[nTbl];
+Node heads[nTbl];
 Node buf[nBuf];
 int bcnt;
 
-#define _nullchk(addr) if (0 == heads[(addr)]) return false
-#define _new(v, p) (p) = buf[bcnt++].alloc(v, (p))
-#define _next(p) for (; (p); (p) = (p)->next) 
+#define nullchk(addr) if (0 == heads[(addr)].n) return false
+#define alloc(v, p) buf[bcnt++].alloc(v, (p))
+#define next(p) for (; (p); (p) = (p)->n) 
 
 void push(int v, int addr) {
-	_new(v, heads[addr]);
+	alloc(v, &heads[addr]);
 }
 
 bool top(int & v, int addr) {
-	_nullchk(addr);
-	v = heads[addr]->v;
+	nullchk(addr);
+	v = heads[addr].n->v;
 	return true;
 }
 
 bool pop(int addr) {
-	_nullchk(addr);
-	heads[addr] = heads[addr]->next;
+	nullchk(addr);
+	heads[addr].n = heads[addr].n->n;
 	return true;
 }
 
-bool isEmpty(int addr) {
-	return 0 == heads[addr];
-}
-
 void push_sorted(int v, int addr) {
-	Node* p = heads[addr];
-	Node* q = p;
-	for (; p && p->v < v; q = p, p = p->next);
-
-	if (p == heads[addr]) {
-		_new(v, heads[addr]);
-	}
-	else {
-		_new(v, q->next);
-	}
+	Node* p = &heads[addr];
+	for (; p->n && p->n->v < v;p = p->n);
+	alloc(v, p);
 }
 
 void print(int addr, int cnt) {
 	cout << "===========================================================" << endl;
-	Node* p = heads[addr];
+	Node* p = heads[addr].n;
 	int i = 0;
 
-	_next(p) {
+	next(p) {
 		cout << p->v << " ";
 		if (++i == cnt) break;
 	}
@@ -90,13 +82,12 @@ void print(int addr, int cnt) {
 }
 
 void selectionSort(int addr) {
-
-	Node* pi = heads[addr];
-	_next(pi) {
+	Node* pi = heads[addr].n;
+	next(pi) {
 		Node* mp = pi;
-		Node* pj = pi->next;
+		Node* pj = pi->n;
 
-		_next(pj) {
+		next(pj) {
 			if (pj->v < mp->v) mp = pj;
 		}
 
@@ -112,7 +103,7 @@ void init() {
 	bcnt = 0;
 
 	f(i, 0, nTbl) {
-		heads[i] = 0;
+		heads[i].n = 0;
 	}
 }
 
@@ -148,9 +139,7 @@ void pushpopTest() {
 	}
 
 	f(i, 0, nTbl) {
-		if (isEmpty(i) == false) {
-			badCnt++;
-		}
+		if (heads[i].n) badCnt++;
 	}
 
 	cout << badCnt << endl;
@@ -174,9 +163,9 @@ void insertionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i];
+		Node* p = heads[i].n;
 		int j = 0;
-		_next(p) {
+		next(p) {
 			if (gt[i][j++] != p->v) {
 				badCnt++;
 			}
@@ -204,9 +193,9 @@ void selectionSortTest() {
 
 	f(i, 0, nTbl) {
 		sort(gt[i], gt[i] + n);
-		Node* p = heads[i];
+		Node* p = heads[i].n;
 		int j = 0;
-		_next(p) {
+		next(p) {
 			if (gt[i][j++] != p->v) {
 				badCnt++;
 			}
