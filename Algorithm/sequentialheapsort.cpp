@@ -221,8 +221,8 @@ struct Heap {
 	}
 
 	void update(rint current) {
-		int current = heap[current]->bid;
-		if (up(current) == current]) down(current);
+		int curr = heap[current]->bid;
+		if (up(current) == curr) down(current);
 	}
 
 	void push(T* value) {
