@@ -32,14 +32,17 @@ struct Data {
 	}
 } sd[maxN];
 
-Data *hbuf[1][maxN];
+
+// Heap buffer could be managed partition by partition externally 
+// In this example, only one part is used, so Data *hbuf[maxN] would be sufficient.
+Data *hbuf[2][maxN];
 
 template <typename T>
 struct Heap {
 	T** heap;
 	int sz;
 
-	void init(T** buf) { sz = 1, heap = buf }
+	void init(T** buf) { sz = 1, heap = buf; }
 
 	void update(T* v) {
 		v->sv = ((long long)(v->v) << 17) + v->idx;
@@ -106,7 +109,7 @@ int mN;
 Heap<Data> hp;
  
 void input() {
-	init(hpbuf[0]);
+	hp.init(hbuf[0]);
 	fe(i, 1, mN) {
 		sd[i].idx = i;
 		scanf("%d", &sd[i].v);
