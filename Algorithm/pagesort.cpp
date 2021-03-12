@@ -60,54 +60,46 @@ struct Node {
 		if (n) n->p = p;
 	}
 
-	void append(Data* d, Node* p_) {
-		pd = d, p = p_, n = 0;
-		p->n = this;
-	}
-
 	void insert(Node* pv) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
 	}
 
-	void init() {
-		n = p = 0;
+	void push_back(Data* d, Node* pv) {
+		pd = d, insert(pv);
 	}
-
 } buf[maxID + maxPage + 1];
 
 int bcnt;
 
-Node* head[maxPage];
+Node head[maxPage];
 Node* tail[maxPage];
 
 Node* nodetbl[maxID + 1];
 
 void remove(int page, rt Node *p) {
 	p->erase();
-	if (p == tail[page]) {
-		tail[page] = p->p;
-	}
+	if (p == tail[page]) tail[page] = p->p;
 }
 
-Node* add(int page, Data* pd) {
+Node* push_back(int page, Data* pd) {
 	rt Node* p = &buf[bcnt++];
-	p->append(pd, tail[page]);
+	p->push_back(pd, tail[page]);
 	tail[page] = p;
 	return p;
 }
 
 void pushsortedR(int pg, Node* q) {
 	rt Node* p = tail[pg];
-	for (; p != head[pg] && *q->pd < *p->pd; p = p->p);
+	for (; p != &head[pg] && *q->pd < *p->pd; p = p->p);
 
 	q->insert(p);
 	if (tail[pg] == p) tail[pg] = q;
 }
 
 void pushsortedF(int pg, Node* q) {
-	rt Node* p = head[pg];
+	rt Node* p = &head[pg];
 	for (; p->n && *p->n->pd < *q->pd; p = p->n);
 
 	q->insert(p);
@@ -115,8 +107,8 @@ void pushsortedF(int pg, Node* q) {
 }
 
 void pushfront(int pg, Node* q) {
-	q->insert(head[pg]);
-	if (tail[pg] == head[pg]) tail[pg] = head[pg]->n;
+	q->insert(&head[pg]);
+	if (tail[pg] == &head[pg]) tail[pg] = head[pg].n;
 }
 #else
 struct Data {
@@ -317,23 +309,14 @@ void init() {
 		fe(i, 1, maxID) {
 			user[i].id = i;
 		}
-
-#ifdef LIST
-		f(i, 0, maxPage) {
-			head[i] = tail[i] = &buf[i];
-		}
-#endif
 	}
 #ifdef LIST
-	else {
-		f(i, 0, maxPage) {
-			tail[i] = &buf[i];
-			buf[i].init();
-		}
+	f(i, 0, maxPage) {
+		head[i].n = 0;
+		tail[i] = &head[i];
 	}
 	bcnt = maxPage;
 #endif
-
 	tc++;
 }
 
@@ -346,7 +329,7 @@ void update(int id, int scoredelta) {
 
 	for (; pg > 0 && *nodetbl[id]->pd < *tail[pg - 1]->pd; pg--);
 	pushsortedR(pg, nodetbl[id]);
-	//pushsortedfront(pg, nodetbl[id]);
+	//pushsortedF(pg, nodetbl[id]);
 	nodetbl[id]->pd->page = pg;
 	
 	while (pg < endpg) {
@@ -434,7 +417,7 @@ int main() {
 		f(i, 0, maxID) {
 			rint page = i / pageSize;
 			sorted[i]->page = page;
-			nodetbl[sorted[i]->id] = add(page, sorted[i]);
+			nodetbl[sorted[i]->id] = push_back(page, sorted[i]);
 		}
 
 		ts[1] = clock();
@@ -446,21 +429,21 @@ int main() {
 		}
 		profile[1] += (clock() - ts[1]);
 #else
-		ts = clock();
+		ts[0] = clock();
 		fe(i, 1, maxUpdate) {
 			rint dscore = rand() % 10;
 			rint id = 1 + (rand() % maxID);
 			updateR(id, dscore);
 			user2[id - 1].score = user[id].score;
 		}
-		profile[1] += (clock() - ts);
+		profile[1] += (clock() - ts[0]);
 #endif
 		sort(user2, user2 + maxID);
 		int ecnt = 0;
 #ifdef LIST
 		int idx = 0;
 		f(i,0,maxPage) {
-			rt Node* p = head[i]->n;
+			rt Node* p = head[i].n;
 			for (; p; p = p->n) {
 				if (user2[idx++] != *p->pd) {
 					ecnt++;
@@ -481,4 +464,3 @@ int main() {
 
 	return 0;
 }
-
