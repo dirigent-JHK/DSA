@@ -15,6 +15,7 @@ using namespace std;
 #define fe(i,a,b) for(rint i=a;i<=b;++i)
 
 #define PATH_COMPRESSION
+#define STACK
 
 const int maxStudents = 50000+1;
 
@@ -22,10 +23,21 @@ int N, M, grp[maxStudents];
 
 int maxReligions;
 #ifdef PATH_COMPRESSION
+#ifdef STACK
+int stack[maxStudents];
+int sp;
+int find(int k) {
+	sp = 0;
+	while (k != grp[k]) stack[sp++] = k, k = grp[k];
+	while (sp) grp[stack[--sp]] = k;
+	return k;
+}
+#else
 int find(int k) {
 	if (grp[k] == k) return k;
 	return grp[k] = find(grp[k]);
 }
+#endif
 #endif
 
 int main() {
