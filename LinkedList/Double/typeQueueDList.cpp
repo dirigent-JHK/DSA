@@ -80,6 +80,7 @@ void push_back(int k, Pt* pd) {
 
 void push_front(int k, Pt* pd) {
 	buf[cnt++].add(pd, &head[k]);
+	if (tail[k] == &head[k]) tail[k] = head[k].n;
 }
 
 void push_sorted(int k, Pt* pd) {
@@ -91,9 +92,14 @@ void push_sorted(int k, Pt* pd) {
 
 void push_rsorted(int k, Pt* pd) {
 	rt Node* p = tail[k];
-	for (; p != &head[k] && (*pd < *(p->pd)); p = p->p);
+	for (; p->p && (*pd < *(p->pd)); p = p->p);
 	buf[cnt++].add(pd, p);
 	if (p == tail[k]) tail[k] = p->n;
+}
+
+void erase(int k, Node* q) {
+	q->erase();
+	if (q == tail[k]) tail[k] = q->p;
 }
 
 /*
@@ -145,7 +151,7 @@ void test_pushback() {
 	cout << ecount << endl;
 	ecount = 0;
 	f(i, 0, M) {
-		fwd(i)	p->erase();
+		fwd(i)	erase(i, p);
 		fwd(i) ecount++;
 	}
 
@@ -175,7 +181,7 @@ void test_pushsorted() {
 	cout << ecount << endl;
 	ecount = 0;
 	f(i, 0, M) {
-		fwd(i)	p->erase();
+		fwd(i)	erase(i, p);
 		fwd(i)	ecount++;
 	}
 
@@ -206,7 +212,7 @@ void test_pushrsorted() {
 	cout << ecount << endl;
 	ecount = 0;
 	f(i, 0, M) {
-		fwd(i)	p->erase();
+		fwd(i)	erase(i,p);
 		fwd(i)	ecount++;
 	}
 
@@ -237,7 +243,7 @@ void test_pushfront() {
 
 	ecount = 0;
 	f(i, 0, M) {
-		bwd(i) p->erase();
+		bwd(i) erase(i,p);
 		bwd(i) ecount++;
 	}
 

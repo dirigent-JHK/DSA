@@ -52,7 +52,7 @@ struct Heap {
 		sz++;
 	}
 
-	void pop() {
+	void erase() {
 		--sz;
 		heap[1] = heap[sz];
 
@@ -95,7 +95,7 @@ int getTop10(int result[10]) {
 	while (hp.sz > 1) {
 		result[ret] = hp.heap[1]->id;
 		poped[ret] = hp.heap[1];
-		hp.pop();
+		hp.erase();
 
 		if (++ret == 10) break;
 	}

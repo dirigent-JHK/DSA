@@ -72,9 +72,7 @@ void push_sorted(int v, int addr) {
 	for (; p->n && p->n->v < v; p = p->n);
 	alloc(v, p);
 
-	if (p == tails[addr]) {
-		tails[addr] = p->n;
-	}
+	if (p == tails[addr]) tails[addr] = p->n;
 }
 
 void print(int addr, int cnt) {
