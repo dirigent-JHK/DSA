@@ -46,8 +46,7 @@ struct Heap {
 
 	void update(T* v) {
 		v->sv = ((long long)(v->v) << 17) + v->idx;
-		int curr = v->hid;
-		if (up(v->hid) == curr) down(v->hid);
+		if (up(v->hid) == v->hid) down(v->hid);
 	}
 
 	int up(int curr) {

@@ -45,20 +45,22 @@ struct Node {
 	Node* p;
 	Node* n;
 
-	void insert(Node* pv) {
+	void insert(Node* pv, Node **tail) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
+		else *tail = this;
 	}
 	
-	void add(Pt* d, Node* pv) {
-		pd = d, insert(pv);
+	void add(Pt* d, Node* pv, Node **tail) {
+		pd = d, insert(pv, tail);
 	}
 
-	void erase() {
+	void erase(Node **tail) {
 		pd = 0;
 		p->n = n;
 		if (n) n->p = p;
+		else *tail = p;
 	}
 
 	void init() {
@@ -74,32 +76,27 @@ Node* tail[M];
 
 void push_back(int k, Pt* pd) {
 	rt Node* p = &buf[cnt++];
-	p->add(pd, tail[k]);
-	tail[k] = p;
+	p->add(pd, tail[k], &tail[k]);
 }
 
 void push_front(int k, Pt* pd) {
-	buf[cnt++].add(pd, &head[k]);
-	if (tail[k] == &head[k]) tail[k] = head[k].n;
+	buf[cnt++].add(pd, &head[k], &tail[k]);
 }
 
 void push_sorted(int k, Pt* pd) {
 	rt Node* p = &head[k];
 	for (; p->n  && *(p->n->pd) < *pd; p = p->n);
-	buf[cnt++].add(pd, p);
-	if (p == tail[k]) tail[k] = p->n;
+	buf[cnt++].add(pd, p, &tail[k]);
 }
 
 void push_rsorted(int k, Pt* pd) {
 	rt Node* p = tail[k];
 	for (; p->p && (*pd < *(p->pd)); p = p->p);
-	buf[cnt++].add(pd, p);
-	if (p == tail[k]) tail[k] = p->n;
+	buf[cnt++].add(pd, p, &tail[k]);
 }
 
 void erase(int k, Node* q) {
-	q->erase();
-	if (q == tail[k]) tail[k] = q->p;
+	q->erase(&tail[k]);
 }
 
 /*

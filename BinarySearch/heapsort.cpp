@@ -79,15 +79,15 @@ int binsearchH(rint s, rint e, T* arr[], T* v) {
 
 template <typename T>
 struct Heap {
-	T* heap[maxN];
+	T* heap[maxN+1];
 	int sz;
 
 	void push(T* value) {
 		heap[sz] = value;
 
 		int current = sz;
-		while (current > 0 && *heap[current] < *heap[(current - 1) >> 1]){
-			int parent = (current - 1) >> 1;
+		while (current > 1 && *heap[current] < *heap[current >> 1]){
+			int parent = current >> 1;
 			T* temp(heap[parent]);
 			heap[parent] = heap[current]; 
 			heap[current] = temp;
@@ -97,16 +97,15 @@ struct Heap {
 	}
 
 	void pop() {
-		if (sz == 0) return;
 		sz--;
-		heap[0] = heap[sz];
+		heap[1] = heap[sz];
 
-		int current = 0;
-		int lchild = 1;
-		int rchild = 2;
+		rint current = 1;
+		rint lchild = 2;
 
 		while (lchild < sz) {
-			int child;
+			rint child;
+			rint rchild = lchild + 1;
 			if (rchild == sz)	child = lchild;
 			else child = *heap[lchild] < *heap[rchild] ? lchild : rchild;
 			if (*heap[current] < *heap[child]) break;
@@ -115,8 +114,7 @@ struct Heap {
 			heap[child] = heap[current];
 			heap[current] = temp;
 			current = child;
-			lchild = (current << 1) + 1;
-			rchild = lchild + 1;
+			lchild = (current << 1);
 		}
 	}
 };
@@ -134,10 +132,10 @@ void setup(int tc) {
 	sort(&sorted[0], &sorted[maxN]);
 }
 void Test_heap() {
-	hp.sz = 0;
+	hp.sz = 1;
 	f(i, 0, maxN) hp.push(&gt[i]);
 	f(i, 0, maxN) {
-		arr[i] = hp.heap[0];
+		arr[i] = hp.heap[1];
 		hp.pop();
 	}
 }

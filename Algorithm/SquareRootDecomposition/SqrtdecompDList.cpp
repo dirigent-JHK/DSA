@@ -19,24 +19,24 @@ struct Node {
 	int v;
 	Node* p, * n;
 
-	void insert(Node* pv) {
+	void insert(Node* pv, Node **tail) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
+		else *tail = this;
 	}
 
-	void alloc(int d, Node* pv) {
-		v = d, insert(pv);
+	void alloc(int d, Node* pv, Node **tail) {
+		v = d, insert(pv, tail);
 	}
 
-	void erase() {
+	void erase(Node **tail) {
 		p->n = n;
 		if (n) n->p = p;
+		else *tail = p;
 	}
 };
 int bn;
-
-#define tailUpdate(a,p) if ((p) == tail[a]) tail[a] = (p)->n
 
 struct List {
 	int bn;
@@ -54,34 +54,27 @@ struct List {
 	}
 
 	void insertF(int addr, Node* q) {
-		q->insert(&head[addr]), ++cnt[addr];
-		tailUpdate(addr, &head[addr]);
+		q->insert(&head[addr], &tail[addr]), ++cnt[addr];
 	}
 
 	void insertB(int addr, Node* q) {
-		q->insert(tail[addr]), ++cnt[addr];
-		tail[addr] = q;
+		q->insert(tail[addr], &tail[addr]), ++cnt[addr];
 	}
 
 	void pushsortedF(int addr, int v) {
 		rt Node* p = &head[addr];
 		for (; p->n && p->n->v < v; p = p->n);
-		buf[bn++].alloc(v, p), ++cnt[addr];
-
-		tailUpdate(addr, p);
+		buf[bn++].alloc(v, p, &tail[addr]), ++cnt[addr];
 	}
 
 	void pushsortedR(int addr, int v) {
 		rt Node* p = tail[addr];
 		for (; p->p && v < p->v; p = p->p);
-		buf[bn++].alloc(v, p), ++cnt[addr];
-
-		tailUpdate(addr, p);
+		buf[bn++].alloc(v, p, &tail[addr]), ++cnt[addr];
 	}
 
 	void erase(int addr, Node* p) {
-		p->erase();
-		if (p == tail[addr]) tail[addr] = p->p;
+		p->erase(&tail[addr]);
 		--cnt[addr];
 	}
 
@@ -152,11 +145,10 @@ void init() {
 
 #if 0
 void pushfront(int addr, int v) {
-	buf[bn++].alloc(v, &head[addr]), ++nObj[addr];
-	tailUpdate(addr, &head[addr]);
+	buf[bn++].alloc(v, &head[addr], &tail[addr]), ++nObj[addr];
 }
 void pushback(int addr, int v) {
-	buf[bn].alloc(v, tail[addr]), ++nObj[addr];
+	buf[bn].alloc(v, tail[addr], &tail[addr]), ++nObj[addr];
 	tail[addr] = &buf[bn++];
 }
 #endif

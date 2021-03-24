@@ -16,15 +16,17 @@ struct Node {
 	int id;
 	Node* p, * n;
 
-	void insert(Node* pv) {
+	void insert(Node* pv, Node **tail) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
+		else *tail = this;
 	}
 
-	void erase() {
+	void erase(Node **tail) {
 		p->n = n;
 		if (n) n->p = p;
+		else *tail = p;
 	}
 
 	void set(int vv, int i) {
@@ -53,31 +55,28 @@ void addUser(int uID, int height) {
 	Node& nd = buf[bcnt++];
 	nd.set(height, uID);
 	if (num > 0) {
-#if 0
-		rt Node* p = &head;
-		for (; p->n && *p->n < nd; p = p->n);
-#else
-		rt Node* p = tail;
-		for (; p != &head && nd  < *p; p = p->p);
-#endif
-
 		if (num == 10) {
-			if (p != tail) {
-				nd.insert(p);
-				//tail->erase();
-				tail = tail->p;
-				tail->n = 0;
+			if (nd < *tail) {
+#if 0
+				rt Node* p = &head;
+				for (; p->n && *p->n < nd; p = p->n);
+#else
+				rt Node* p = tail;
+				for (; p != &head && nd < *p; p = p->p);
+#endif
+				nd.insert(p, &tail);
+				tail->erase(&tail);
 			}
 		}
 		else {
 			++num;
-			nd.insert(p);
-			if (tail == p) tail = p->n;
+			rt Node* p = tail;
+			for (; p != &head && nd < *p; p = p->p);
+			nd.insert(p, &tail);
 		}
 	}
 	else {
-		nd.insert(&head);
-		tail = &nd;
+		nd.insert(&head, &tail);
 		num = 1;
 	}
 }

@@ -113,7 +113,7 @@ struct Heap {
 	T* heap[LM * LM * INF*4+1];
 	int sz;
 
-	void up(rint current) {
+	int up(rint current) {
 		while (current > 1 && *heap[current] < *heap[current >> 1]) {
 			rint pa = current >> 1;
 
@@ -124,6 +124,7 @@ struct Heap {
 			//heap[current]->bid = current;
 			current = pa;
 		}
+		return current;
 	}
 	void down(rint current) {
 		rint lc = current << 1;
@@ -145,11 +146,8 @@ struct Heap {
 		}
 	}
 
-	void update(rint current) {
-		if (current > 1 && *heap[current] < *heap[current >> 1])
-			up(current);
-		else
-			down(current);
+	void update(int current) {
+		if (current == up(current))	down(current);
 	}
 
 	void push(T* value) {

@@ -186,7 +186,6 @@ struct Heap {
 	int sz;
 
 	int up(rint current) {
-		heap[current]->bid = current;
 		while (current > 1 && *heap[current] < *heap[current>>1]) {
 			rint pa = current >> 1;
 
@@ -201,7 +200,6 @@ struct Heap {
 	}
 	void down(rint current) {
 		rint lc = current << 1;
-		heap[current]->bid = current;
 		while (lc < sz) {
 			rint ch;
 			rint rc = lc + 1;
@@ -221,11 +219,11 @@ struct Heap {
 	}
 
 	void update(rint current) {
-		int curr = heap[current]->bid;
-		if (up(current) == curr) down(current);
+		if (up(current) == current) down(current);
 	}
 
 	void push(T* value) {
+		value->bid = sz;
 		heap[sz] = value;
 		up(sz++);
 	}
@@ -277,19 +275,21 @@ struct Node {
 	Account* pa;
 	Node* n, * p;
 
-	void insert(Node* pv) {
+	void insert(Node* pv, Node **tail) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
+		else *tail = this;
 	}
-	void alloc(Account* pd, Node* hd) {
+	void alloc(Account* pd, Node* hd, Node **tail) {
 		pa = pd;
-		insert(hd);
+		insert(hd,  tail);
 	}
 
-	void erase() {
+	void erase(Node **tail) {
 		p->n = n;
 		if (n) n->p = p;
+		else *tail = p;
 	}
 } buf[maxBuf], head[maxGroup];
 int bcnt;

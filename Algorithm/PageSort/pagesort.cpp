@@ -55,19 +55,21 @@ struct Data {
 struct Node {
 	Data* pd;
 	Node *n, *p;
-	void erase() {
+	void erase(Node **tail) {
 		p->n = n;
 		if (n) n->p = p;
+		else *tail = p;
 	}
 
-	void insert(Node* pv) {
+	void insert(Node* pv, Node **tail) {
 		p = pv, n = pv->n;
 		p->n = this;
 		if (n) n->p = this;
+		else *tail = this;
 	}
 
-	void push_back(Data* d, Node* pv) {
-		pd = d, insert(pv);
+	void push_back(Data* d, Node **tail) {
+		pd = d, insert(*tail, tail);
 	}
 } buf[maxID + maxPage + 1];
 
@@ -79,13 +81,12 @@ Node* tail[maxPage];
 Node* nodetbl[maxID + 1];
 
 void remove(int page, rt Node *p) {
-	p->erase();
-	if (p == tail[page]) tail[page] = p->p;
+	p->erase(&tail[page]);
 }
 
 Node* push_back(int page, Data* pd) {
 	rt Node* p = &buf[bcnt++];
-	p->push_back(pd, tail[page]);
+	p->push_back(pd, &tail[page]);
 	tail[page] = p;
 	return p;
 }
@@ -94,21 +95,18 @@ void pushsortedR(int pg, Node* q) {
 	rt Node* p = tail[pg];
 	for (; p != &head[pg] && *q->pd < *p->pd; p = p->p);
 
-	q->insert(p);
-	if (tail[pg] == p) tail[pg] = q;
+	q->insert(p, &tail[pg]);
 }
 
 void pushsortedF(int pg, Node* q) {
 	rt Node* p = &head[pg];
 	for (; p->n && *p->n->pd < *q->pd; p = p->n);
 
-	q->insert(p);
-	if (tail[pg] == p) tail[pg] = q;
+	q->insert(p, &tail[pg]);
 }
 
 void pushfront(int pg, Node* q) {
-	q->insert(&head[pg]);
-	if (tail[pg] == &head[pg]) tail[pg] = head[pg].n;
+	q->insert(&head[pg], &tail[pg]);
 }
 #else
 struct Data {
