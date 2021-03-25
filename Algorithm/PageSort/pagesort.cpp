@@ -21,7 +21,7 @@ const int maxID = 100000;
 const int pageSize = 100;
 const int maxPage = maxID / pageSize;
 const int maxUpdate = 100000;
-#define LIST
+//#define LIST
 
 #ifdef LIST 
 struct Data {
@@ -68,7 +68,7 @@ struct Node {
 		else *tail = this;
 	}
 
-	void push_back(Data* d, Node **tail) {
+	void add(Data* d, Node **tail) {
 		pd = d, insert(*tail, tail);
 	}
 } buf[maxID + maxPage + 1];
@@ -86,8 +86,7 @@ void remove(int page, rt Node *p) {
 
 Node* push_back(int page, Data* pd) {
 	rt Node* p = &buf[bcnt++];
-	p->push_back(pd, &tail[page]);
-	tail[page] = p;
+	p->add(pd, &tail[page]);
 	return p;
 }
 
